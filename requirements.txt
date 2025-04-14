@@ -1,6 +1,6 @@
 streamlit
-openai
-langchain
+transformers
+sentence-transformers
+torch
 chromadb
-tiktoken
 pypdf
