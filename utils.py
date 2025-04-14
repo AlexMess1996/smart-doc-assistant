@@ -6,7 +6,11 @@ from langchain.text_splitter import CharacterTextSplitter
 from sklearn.metrics.pairwise import cosine_similarity
 
 # Load free Hugging Face models
-qa_model = pipeline("question-answering", model="distilbert-base-uncased-distilled-squad")
+#the model is too small
+#qa_model = pipeline("question-answering", model="distilbert-base-uncased-distilled-squad")
+
+qa_model = pipeline("question-answering", model="deepset/roberta-base-squad2")
+
 embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 def process_document(uploaded_file):
@@ -25,14 +29,17 @@ def process_document(uploaded_file):
     docs = splitter.split_documents(raw_docs)
     return docs
 
-def ask_question(docs, question):
+def ask_question(docs, question, top_k=3):
     texts = [doc.page_content for doc in docs]
     embeddings = embedder.encode(texts)
     question_embedding = embedder.encode([question])
 
     similarities = cosine_similarity(question_embedding, embeddings)[0]
-    top_index = similarities.argmax()
-    context = texts[top_index]
+    top_indices = similarities.argsort()[-top_k:][::-1]  # Get top K similar chunks
+
+    # Combine top chunks into one big context
+    context = "\n\n".join([texts[i] for i in top_indices])
 
     result = qa_model(question=question, context=context)
-    return result["answer"]
+    return result["answer"], context
+
